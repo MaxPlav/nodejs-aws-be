@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "default": {},
+    "required": [
+        "count",
+        "id",
+        "price",
+        "title",
+        "image"
+    ],
+    "properties": {
+        "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Number of items in a store",
+            "default": 0
+        },
+        "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Description of the product",
+            "default": ""
+        },
+        "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Product id",
+            "default": ""
+        },
+        "price": {
+            "type": "integer",
+            "title": "Price",
+            "description": "Product price",
+            "default": 0
+        },
+        "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Title of the product",
+            "default": ""
+        },
+        "image": {
+            "type": "string",
+            "title": "Image",
+            "description": "Image url",
+            "default": ""
+        }
+    }
+}
