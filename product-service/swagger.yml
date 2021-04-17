@@ -1,6 +1,6 @@
 swagger: '2.0'
 info:
-  version: 1.0.1
+  version: 1.0.2
   title: AWS node product-service API
   # put the contact info for your development or API team
   contact:
@@ -25,8 +25,29 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Product'
+        500:
+          description: internal server error
+      tags:
+        - default
+    post:
+      summary: Create a product
+      description: |
+        Create a product
+      consumes:
+      - application/json
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/Product'
+      responses:
         400:
-          description: bad input parameter
+          description: invalid product data
+        201:
+          description: product successfully created
+        500:
+          description: internal server error  
       tags:
         - default
   /products/{id}:
@@ -52,9 +73,11 @@ paths:
         400:
           description: Bad input parameter
         404:
-          description: Product not found  
+          description: Product not found
+        500:
+          description: internal server error
       tags:
-        - default      
+        - default
 definitions:
   Product:
     type: object
@@ -78,6 +101,9 @@ definitions:
       title:
         type: string
         example: Toy
+      description:
+        type: string
+        example: Big super toy  
       image:
         type: string
         example: https://s3.bucket.aws.com

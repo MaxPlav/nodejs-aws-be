@@ -1,26 +1,40 @@
-import { APIGatewayEvent, Context, Callback } from 'aws-lambda'
-
+import { APIGatewayEvent, Context, Callback } from 'aws-lambda';
 import { getProductsById } from '../../../functions/getProductsById/handler';
+import { ProductsService } from '../../../services/products';
 
-jest.mock('../../../libs/productList.js', function() {
-  return [
-    {
-      "id": "1",
-      "title": "product1",
-    },
-    {
-      "id": "2",
-      "title": "product2",
-    },
-  ];
-});
+jest.mock('../../../services/products');
 
-describe('getProductsById', function() {
-  it('should return status 200 and products by id', async() => {
+const mockedData = [
+  {
+    id: '1',
+    title: 'product1',
+  },
+  {
+    id: '2',
+    title: 'product2',
+  },
+];
+
+describe('getProductsById', function () {
+  beforeAll(() => {
+    (ProductsService as any).mockImplementation(() => {
+      return {
+        getProductById: (id) => {
+          return mockedData.find((o) => o.id === id);
+        },
+      };
+    });
+  });
+
+  afterEach(() => {
+    (ProductsService as any).mockClear();
+  });
+
+  it('should return status 200 and products by id', async () => {
     const event: APIGatewayEvent = {
       pathParameters: {
-        id: '2'
-      }
+        id: '2',
+      },
     } as any;
     const context: Context = {} as any;
     const callback: Callback = {} as any;
@@ -33,7 +47,7 @@ describe('getProductsById', function() {
     expect(product.title).toEqual('product2');
   });
 
-  it('should return status 404 if product is not found', (done) => {
+  it('should return status 404 if product is not found', async () => {
     const error = {
       statusCode: 404,
       body: 'Product not found',
@@ -43,23 +57,20 @@ describe('getProductsById', function() {
         'Access-Control-Allow-Credentials': true,
       },
     };
-
     const event: APIGatewayEvent = {
       pathParameters: {
-        id: '3'
-      }
+        id: '3',
+      },
     } as any;
     const context: Context = {} as any;
-    const callback: Callback = jest.fn((a, result) => {
-      expect(a).toBeNull();
-      expect(result).toEqual(error);
-      done()
-    });
+    const callback: Callback = {} as any;
 
-    getProductsById(event, context, callback);
+    const result: any = await getProductsById(event, context, callback);
+
+    expect(result).toEqual(error);
   });
 
-  it('should return status 500 if product "id" is not specified', (done) => {
+  it('should return status 500 if product "id" is not specified', async () => {
     const error = {
       statusCode: 500,
       body: 'Internal server error',
@@ -69,15 +80,12 @@ describe('getProductsById', function() {
         'Access-Control-Allow-Credentials': true,
       },
     };
-    
     const event: APIGatewayEvent = {} as any;
     const context: Context = {} as any;
-    const callback: Callback = jest.fn((a, result) => {
-      expect(a).toBeNull();
-      expect(result).toEqual(error);
-      done();
-    });
+    const callback: Callback = {} as any;
 
-    getProductsById(event, context, callback);
+    const result: any = await getProductsById(event, context, callback);
+
+    expect(result).toEqual(error);
   });
 });
