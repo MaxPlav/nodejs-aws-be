@@ -10,28 +10,19 @@ import { middyfy } from '../../libs/lambda';
 import { ProductsService } from '../../services';
 import { ProductError } from '../../libs/errors';
 
-export const getProductsById: APIGatewayProxyHandler = async (
+export const createProduct: APIGatewayProxyHandler = async (
   event: APIGatewayEvent
 ) => {
   try {
-    console.log('getProductsById lambda event: ', event);
-
-    const id = event.pathParameters.id;
-    if (!id) {
-      return formatJSONErrorResponse('Bad input parameter', 400);
-    }
+    console.log('createProduct lambda event: ', event);
 
     const productService = new ProductsService();
-    const product = await productService.getProductById(id);
+    const product = await productService.createProduct(event.body);
 
-    if (!product) {
-      return formatJSONErrorResponse('Product not found', 404);
-    }
-
-    return formatJSONResponse(product);
+    return formatJSONResponse(product, 201);
   } catch (e) {
-    console.error('Lambda invokation "getProductsById": ', e.message);
-    
+    console.error('Lambda invokation "createProduct": ', e.message);
+
     if (e instanceof ProductError) {
       return formatJSONErrorResponse(e.message, 400);
     }
@@ -39,4 +30,4 @@ export const getProductsById: APIGatewayProxyHandler = async (
   }
 };
 
-export const main = middyfy(getProductsById);
+export const main = middyfy(createProduct);

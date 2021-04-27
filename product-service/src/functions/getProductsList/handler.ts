@@ -1,28 +1,27 @@
 import 'source-map-support/register';
-import {
-  APIGatewayProxyHandler,
-  APIGatewayEvent,
-  Context,
-  Callback,
-} from 'aws-lambda';
+import { APIGatewayProxyHandler, APIGatewayEvent } from 'aws-lambda';
 
 import {
   formatJSONResponse,
   formatJSONErrorResponse,
 } from '../../libs/apiGateway';
 import { middyfy } from '../../libs/lambda';
-import productList from '../../libs/productList.js';
+
+import { ProductsService } from '../../services';
 
 export const getProductsList: APIGatewayProxyHandler = async (
-  _: APIGatewayEvent,
-  __: Context,
-  callback: Callback
+  event: APIGatewayEvent
 ) => {
   try {
-    return formatJSONResponse(productList);
+    console.log('getProductsList lambda event: ', event);
+
+    const productService = new ProductsService();
+    const products = await productService.getProductsList();
+
+    return formatJSONResponse(products);
   } catch (e) {
     console.error('Lambda invokation "getProductsList": ', e);
-    callback(null, formatJSONErrorResponse(500, 'Internal server error'));
+    return formatJSONErrorResponse('Internal server error');
   }
 };
 
