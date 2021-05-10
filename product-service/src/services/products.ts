@@ -1,3 +1,4 @@
+import * as AWS from 'aws-sdk';
 import { isString, isEmpty, isInteger, gt } from 'lodash';
 import { Client, ConnectionConfig } from 'pg';
 
@@ -20,8 +21,10 @@ const dbOptions: ConnectionConfig = {
 
 import { isValidUUID } from '../libs/utils';
 import { ProductRepository } from '../repositories/product';
+
+const SNS_ARN = process.env.SNS_ARN;
 export class ProductsService {
-  constructor() {}
+  constructor(private _snsQueue?: AWS.SNS) {}
 
   public getProductsList(): Promise<Product[]> {
     const client = new Client(dbOptions);
@@ -58,6 +61,36 @@ export class ProductsService {
     return productRepository.create(entity).finally(() => {
       client.end();
     });
+  }
+
+  public async createProductBatch(products: any[]): Promise<Product[]> {
+    if (!products || !products.length) {
+      return Promise.reject(new ProductError('No data provided at "createProductBatch"'));
+    }
+    const client = new Client(dbOptions);
+    const productRepository = new ProductRepository(client);
+
+    try {
+      for (const item of products) {
+        const entity = new Product(item);
+        await productRepository.create(entity);
+      }
+    } finally {
+      client.end();
+    }
+  }
+
+  public async notify(products): Promise<void> {
+    if (!products || !products.length) {
+      return Promise.reject(new ProductError('No data provided at "notify"'));
+    }
+    return this._snsQueue.publish({
+      Subject: 'New products are imported',
+      Message: JSON.stringify(products),
+      TopicArn: SNS_ARN
+    }, () => {
+      console.log('Sent emails with new products: ', products);
+    })
   }
 }
 

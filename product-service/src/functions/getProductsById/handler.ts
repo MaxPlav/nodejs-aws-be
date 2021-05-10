@@ -14,7 +14,7 @@ export const getProductsById: APIGatewayProxyHandler = async (
   event: APIGatewayEvent
 ) => {
   try {
-    console.log('getProductsById lambda event: ', event);
+    console.log('Lambda invokation "getProductsById": ', event);
 
     const id = event.pathParameters.id;
     if (!id) {

@@ -3,7 +3,7 @@ import type { AWS } from '@serverless/typescript';
 import importProductsFile from '@functions/importProductsFile';
 import importFileParser from '@functions/importFileParser';
 
-import { AWS_REGION, IMPORT_BUCKET_NAME } from './src/constants';
+import { AWS_REGION, IMPORT_BUCKET_NAME, SQS_QUEUE_ID, SQS_QUEUE_NAME } from './src/constants';
 
 const serverlessConfiguration: AWS = {
   service: 'import-service',
@@ -24,6 +24,9 @@ const serverlessConfiguration: AWS = {
     },
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
+      SQS_URL: {
+        Ref: SQS_QUEUE_ID
+      },
     },
     lambdaHashingVersion: '20201221',
     iam: {
@@ -39,10 +42,29 @@ const serverlessConfiguration: AWS = {
             Action: 's3:*',
             Resource: `arn:aws:s3:::${IMPORT_BUCKET_NAME}/*`,
           },
+          {
+            Effect: 'Allow',
+            Action: 'sqs:*',
+            Resource: [
+              {
+                'Fn::GetAtt:': [ SQS_QUEUE_ID, 'Arn']
+              }
+            ],
+          }
         ],
       },
     },
     region: AWS_REGION,
+  },
+  resources: {
+    Resources: {
+      [SQS_QUEUE_ID]: {
+        Type: 'AWS::SQS::Queue',
+        Properties: {
+          QueueName: SQS_QUEUE_NAME
+        }
+      }
+    }
   },
   functions: { importProductsFile, importFileParser },
 };
