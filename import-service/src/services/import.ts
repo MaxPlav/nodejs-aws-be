@@ -7,7 +7,7 @@ export class ImportService implements IImportService {
   private _s3Service: AWS.S3;
 
   constructor(private _config) {
-    this._s3Service = new AWS.S3({ region: this._config.region });
+    this._s3Service = new AWS.S3({ region: this._config.region, signatureVersion: 'v4' });
   }
 
   public getS3ImportSignedUrl(filePath: string): Promise<string> {
