@@ -3,18 +3,20 @@ import type { AWS } from '@serverless/typescript';
 import importProductsFile from '@functions/importProductsFile';
 import importFileParser from '@functions/importFileParser';
 
-import { AWS_REGION, IMPORT_BUCKET_NAME, SQS_QUEUE_ID, SQS_QUEUE_NAME } from './src/constants';
-
 const serverlessConfiguration: AWS = {
   service: 'import-service',
   frameworkVersion: '2',
+  useDotenv: true,
   custom: {
     webpack: {
       webpackConfig: './webpack.config.js',
       includeModules: true,
     },
+    dotenv: {
+      dotenvParser: 'dotenv.config.js',
+    },
   },
-  plugins: ['serverless-webpack'],
+  plugins: ['serverless-webpack', 'serverless-dotenv-plugin'],
   provider: {
     name: 'aws',
     runtime: 'nodejs14.x',
@@ -25,8 +27,9 @@ const serverlessConfiguration: AWS = {
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       SQS_URL: {
-        Ref: SQS_QUEUE_ID
+        Ref: '${env:SQS_QUEUE_ID}'
       },
+      REGION: '${self:provider.region}'
     },
     lambdaHashingVersion: '20201221',
     iam: {
@@ -35,36 +38,54 @@ const serverlessConfiguration: AWS = {
           {
             Effect: 'Allow',
             Action: 's3:ListBucket',
-            Resource: `arn:aws:s3:::${IMPORT_BUCKET_NAME}`,
+            Resource: 'arn:aws:s3:::${env:IMPORT_BUCKET_NAME}',
           },
           {
             Effect: 'Allow',
             Action: 's3:*',
-            Resource: `arn:aws:s3:::${IMPORT_BUCKET_NAME}/*`,
+            Resource: 'arn:aws:s3:::${env:IMPORT_BUCKET_NAME}/*',
           },
           {
             Effect: 'Allow',
             Action: 'sqs:*',
             Resource: [
               {
-                'Fn::GetAtt:': [ SQS_QUEUE_ID, 'Arn']
+                'Fn::GetAtt': [ '${env:SQS_QUEUE_ID}', 'Arn']
               }
             ],
           }
         ],
       },
     },
-    region: AWS_REGION,
+    region: 'eu-west-1',
   },
   resources: {
     Resources: {
-      [SQS_QUEUE_ID]: {
+      'CatalogItemsQueue': {
         Type: 'AWS::SQS::Queue',
         Properties: {
-          QueueName: SQS_QUEUE_NAME
+          QueueName: '${env:SQS_QUEUE_NAME}'
         }
       }
-    }
+    },
+    Outputs: {
+      'CatalogItemsQueueArn': {
+        Value: {
+          'Fn::GetAtt': [ '${env:SQS_QUEUE_ID}', 'Arn']
+        },
+        Export: {
+          Name: '${env:SQS_QUEUE_ID}' + 'Arn'
+        }
+      },
+      'CatalogItemsQueueUrl': {
+        Value: {
+          'Ref': '${env:SQS_QUEUE_ID}',
+        },
+        Export: {
+          Name: '${env:SQS_QUEUE_ID}' + 'Url'
+        }
+      }
+    },
   },
   functions: { importProductsFile, importFileParser },
 };

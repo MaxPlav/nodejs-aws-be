@@ -1,10 +1,10 @@
 import { IWrite, IRead } from './interfaces';
-import { Client } from 'pg';
+import { Client, PoolClient } from 'pg';
 
 export abstract class BaseRepository<T> implements IWrite<T>, IRead<T> {
-  public readonly connection: Client;
+  public readonly connection: Client | PoolClient;
 
-  constructor(connection: Client) {
+  constructor(connection: Client | PoolClient) {
     this.connection = connection;
   }
   create(_item: T): Promise<string | T> {

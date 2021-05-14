@@ -1,32 +1,41 @@
 import 'source-map-support/register';
 import * as AWS from 'aws-sdk';
-import { SQSEvent, SQSHandler } from 'aws-lambda';
+import { SQSEvent } from 'aws-lambda';
 
 import { middyfy } from '../../libs/lambda';
 
 import { ProductsService } from '../../services';
-import { AWS_REGION } from '../../constants';
+import { REGION } from '../../config';
 
-export const catalogBatchProcess: SQSHandler = async (
+export const catalogBatchProcess: any = async (
   event: SQSEvent
 ) => {
   try {
-  console.log('Lambda invokation "catalogBatchProcess": ', event);
+  console.log('Lambda invokation "catalogBatchProcess" products: ', event.Records);
 
   const snsQueue = new AWS.SNS({
-    region: AWS_REGION
+    region: REGION
   });
+
   const productService = new ProductsService(snsQueue);
-  const products = event.Records.map(({ body }) => body);
-  
-  // notify SNS
-  await productService.notify(products);
+  const products = event.Records.map(({ body }) => JSON.parse(body));
 
   // create products
   const newProducts = await productService.createProductBatch(products);
-  console.log('Products are created ', newProducts);
+  console.log('New products created in db..', newProducts.length);
+  
+  // notify SNS
+  await productService.notifyBatch(products);
+  console.log('Finished notification..');
+
+  return {
+    statusCode: 200
+  };
   } catch(e) {
     console.error('Lambda invokation "catalogBatchProcess": ', e.message);
+    return {
+      statusCode: 500
+    };
   }
 };
 

@@ -5,18 +5,20 @@ import getProductsById from '@functions/getProductsById';
 import createProduct from '@functions/createProduct';
 import catalogBatchProcess from '@functions/catalogBatchProcess';
 
-import { AWS_REGION, SQS_QUEUE_ID, SNS_TOPIC_ID, SNS_TOPIC_NAME, SNS_SUBSCRIPTION_ID } from './src/constants';
-
 const serverlessConfiguration: AWS = {
   service: 'product-service',
   frameworkVersion: '2',
+  useDotenv: true,
   custom: {
     webpack: {
       webpackConfig: './webpack.config.js',
       includeModules: true,
     },
+    dotenv: {
+      dotenvParser: 'dotenv.config.js',
+    },
   },
-  plugins: ['serverless-webpack', 'serverless-openapi-documentation'],
+  plugins: ['serverless-webpack', 'serverless-openapi-documentation', 'serverless-dotenv-plugin'],
   provider: {
     name: 'aws',
     runtime: 'nodejs14.x',
@@ -27,11 +29,11 @@ const serverlessConfiguration: AWS = {
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       SNS_ARN: {
-        ref: SNS_TOPIC_ID
-      }
+        Ref: '${env:SNS_TOPIC_ID}'
+      },
+      REGION: '${self:provider.region}'
     },
     lambdaHashingVersion: '20201221',
-    region: AWS_REGION,
     iam: {
       role: {
         statements: [
@@ -40,7 +42,7 @@ const serverlessConfiguration: AWS = {
             Action: 'sqs:*',
             Resource: [
               {
-                'Fn::GetAtt:': [ SQS_QUEUE_ID, 'Arn']
+                'Fn::ImportValue': '${env:SQS_QUEUE_ID}' + 'Arn'
               }
             ],
           },
@@ -49,29 +51,50 @@ const serverlessConfiguration: AWS = {
             Action: 'sns:*',
             Resource: [
               {
-                'Ref': SNS_TOPIC_ID
+                'Ref': '${env:SNS_TOPIC_ID}'
               }
             ],
           }
         ]
       }
-    }
+    },
+    region: 'eu-west-1',
   },
   resources: {
     Resources: {
-      [SNS_TOPIC_ID]: {
+      'CreateProductTopic': {
         Type: 'AWS::SNS::Topic',
         Properties: {
-          TopicName: SNS_TOPIC_NAME
+          TopicName: '${env:SNS_TOPIC_NAME}'
         }
       },
-      [SNS_SUBSCRIPTION_ID]: {
+      'CreateProductSubscription': {
         Type: 'AWS::SNS::Subscription',
         Properties: {
           Endpoint: 'max.plavinskiy@gmail.com',
           Protocol: 'email',
           TopicArn: {
-            ref: SNS_TOPIC_ID
+            Ref: '${env:SNS_TOPIC_ID}'
+          },
+          FilterPolicy: {
+            "count": [
+              {"numeric": [">=", 5]}
+            ]
+          }
+        }
+      },
+      'CreateProductSubscription2': {
+        Type: 'AWS::SNS::Subscription',
+        Properties: {
+          Endpoint: 'mplavin@lenta.ru',
+          Protocol: 'email',
+          TopicArn: {
+            Ref: '${env:SNS_TOPIC_ID}'
+          },
+          FilterPolicy: {
+            "count": [
+              {"numeric": ["<", 5]}
+            ]
           }
         }
       }

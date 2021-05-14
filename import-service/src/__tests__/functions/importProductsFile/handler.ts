@@ -1,7 +1,7 @@
 import { APIGatewayEvent, Context, Callback } from 'aws-lambda';
 import { importProductsFile } from '../../../functions/importProductsFile/handler';
 import { ImportService } from '../../../services/import';
-import { UPLOAD_FILE_PATH } from '../../../constants';
+import { UPLOAD_FILE_PATH } from '../../../config';
 
 jest.mock('../../../services/import');
 

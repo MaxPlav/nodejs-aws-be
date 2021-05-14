@@ -37,7 +37,7 @@ export class ImportService implements IImportService {
         .pipe(csv())
         .on('data', (data) => {
           console.log('Parsed chunk: ', data);
-          this.publishToQueue(data);
+          this.publishToQueue(JSON.stringify(data));
         })
         .on('error', reject)
         .on('end', () => {
@@ -70,10 +70,9 @@ export class ImportService implements IImportService {
   }
 
   public publishToQueue(message: string): void {
-    console.log('@== QueueUrl', SQS_URL);
     this._sqsQueue.sendMessage({
       QueueUrl: SQS_URL,
-      MessageBody: message
+      MessageBody: message,
     }, (error) => {
       if (error) {
         console.error('Publish message to queue error: ', error);
