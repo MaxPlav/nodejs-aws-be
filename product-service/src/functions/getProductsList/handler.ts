@@ -13,7 +13,7 @@ export const getProductsList: APIGatewayProxyHandler = async (
   event: APIGatewayEvent
 ) => {
   try {
-    console.log('getProductsList lambda event: ', event);
+    console.log('Lambda invokation "getProductsList": ', event);
 
     const productService = new ProductsService();
     const products = await productService.getProductsList();

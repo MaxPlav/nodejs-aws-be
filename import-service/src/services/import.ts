@@ -3,10 +3,14 @@ import csv from 'csv-parser';
 
 import { IImportService } from '../types';
 
+const SQS_URL = process.env.SQS_URL;
+
 export class ImportService implements IImportService {
   private _s3Service: AWS.S3;
+  private _sqsQueue: AWS.SQS;
 
   constructor(private _config) {
+    this._sqsQueue = new AWS.SQS();
     this._s3Service = new AWS.S3({ region: this._config.region, signatureVersion: 'v4' });
   }
 
@@ -33,6 +37,7 @@ export class ImportService implements IImportService {
         .pipe(csv())
         .on('data', (data) => {
           console.log('Parsed chunk: ', data);
+          this.publishToQueue(JSON.stringify(data));
         })
         .on('error', reject)
         .on('end', () => {
@@ -62,5 +67,18 @@ export class ImportService implements IImportService {
 
       console.log('File is successfully moved');
       return;
+  }
+
+  public publishToQueue(message: string): void {
+    this._sqsQueue.sendMessage({
+      QueueUrl: SQS_URL,
+      MessageBody: message,
+    }, (error) => {
+      if (error) {
+        console.error('Publish message to queue error: ', error);
+      } else {
+        console.log('Publish message to queue: ', message);
+      }
+    });
   }
 }

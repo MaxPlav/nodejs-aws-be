@@ -7,8 +7,6 @@ export class ProductRepository extends BaseRepository<Product> {
     let newStockId: string;
 
     try {
-      await this.connection.connect();
-
       const dbResultProducts = await this.connection.query(`
       insert into products(title, description, image, price) values
         ('${entity.getTitle()}', '${entity.getDescription()}', '${entity.getImage()}', ${entity.getPrice()})
@@ -65,13 +63,12 @@ export class ProductRepository extends BaseRepository<Product> {
 
   async findAll(): Promise<Product[]> {
     try {
-      await this.connection.connect();
-
       const dbResult = await this.connection.query(`
         select p.id, p.title, p.description, p.price, p.image, s.count
           from products p
           inner join stocks s on p.id = s.product_id
       `);
+
       return dbResult.rows;
     } catch (e) {
       return Promise.reject(e);
@@ -80,8 +77,6 @@ export class ProductRepository extends BaseRepository<Product> {
 
   async findOne(id: string): Promise<Product> {
     try {
-      await this.connection.connect();
-
       const dbResult = await this.connection.query(`
         select p.id, p.title, p.description, p.price, p.image, s.count
           from products p

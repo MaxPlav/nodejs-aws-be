@@ -14,7 +14,7 @@ export const createProduct: APIGatewayProxyHandler = async (
   event: APIGatewayEvent
 ) => {
   try {
-    console.log('createProduct lambda event: ', event);
+    console.log('Lambda invokation "createProduct": ', event);
 
     const productService = new ProductsService();
     const product = await productService.createProduct(event.body);

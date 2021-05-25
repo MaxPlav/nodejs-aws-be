@@ -7,7 +7,7 @@ import { middyfy } from '../../libs/lambda';
 
 import { ImportService } from '../../services';
 
-import { AWS_REGION, IMPORT_BUCKET_NAME, UPLOAD_FILE_PATH } from '../../constants';
+import { REGION, IMPORT_BUCKET_NAME, UPLOAD_FILE_PATH } from '../../config';
 
 export const importProductsFile: APIGatewayProxyHandler = async (event: APIGatewayEvent) => {
   console.log('Lambda invokation "importProductsFile": ', event);
@@ -21,7 +21,7 @@ export const importProductsFile: APIGatewayProxyHandler = async (event: APIGatew
   try {
     const importService = new ImportService({
       bucketName: IMPORT_BUCKET_NAME,
-      region: AWS_REGION,
+      region: REGION,
     });
     // create signed url
     const filePath = `${UPLOAD_FILE_PATH}/${fileName}`;

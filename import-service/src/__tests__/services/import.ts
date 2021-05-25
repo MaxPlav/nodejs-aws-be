@@ -5,7 +5,7 @@ const mS3Instance = {
 };
 
 jest.mock('aws-sdk', () => {
-  return { S3: jest.fn(() => mS3Instance) };
+  return { S3: jest.fn(() => mS3Instance), SQS: jest.fn() };
 });
 
 describe('ImportService', function () {

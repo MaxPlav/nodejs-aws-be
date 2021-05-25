@@ -1,5 +1,5 @@
 import { handlerPath } from '@libs/handlerResolver';
-import { UPLOAD_FILE_PATH } from '../../constants';
+import { UPLOAD_FILE_PATH } from '../../config';
 
 export default {
   handler: `${handlerPath(__dirname)}/handler.main`,

@@ -1,12 +1,13 @@
+import * as AWS from 'aws-sdk';
 import { isString, isEmpty, isInteger, gt } from 'lodash';
-import { Client, ConnectionConfig } from 'pg';
+import { ClientConfig, Client } from 'pg';
 
 import { Product } from '../entities/product';
 import { ProductError } from '../libs/errors';
 
-const { PG_HOST, PG_PORT, PG_DATABASE, PG_USERNAME, PG_PASSWORD } = process.env;
+import { PG_HOST, PG_PORT, PG_DATABASE, PG_USERNAME, PG_PASSWORD, SNS_ARN } from '../config';
 
-const dbOptions: ConnectionConfig = {
+const dbOptions: ClientConfig = {
   host: PG_HOST,
   port: Number(PG_PORT),
   database: PG_DATABASE,
@@ -20,11 +21,13 @@ const dbOptions: ConnectionConfig = {
 
 import { isValidUUID } from '../libs/utils';
 import { ProductRepository } from '../repositories/product';
-export class ProductsService {
-  constructor() {}
 
-  public getProductsList(): Promise<Product[]> {
+export class ProductsService {
+  constructor(private _snsQueue?: AWS.SNS) {}
+
+  public async getProductsList(): Promise<Product[]> {
     const client = new Client(dbOptions);
+    await client.connect();
 
     const productRepository = new ProductRepository(client);
     return productRepository.findAll().finally(() => {
@@ -32,12 +35,13 @@ export class ProductsService {
     });
   }
 
-  public getProductById(id: string): Promise<Product> {
+  public async getProductById(id: string): Promise<Product> {
     if (!isValidUUID(id)) {
       return Promise.reject(new ProductError('Product ID is invalid'));
     }
 
     const client = new Client(dbOptions);
+    await client.connect();
 
     const productRepository = new ProductRepository(client);
     return productRepository.findOne(id).finally(() => {
@@ -45,19 +49,77 @@ export class ProductsService {
     });
   }
 
-  public createProduct(data: any): Promise<Product> {
+  public async createProduct(data: any): Promise<Product> {
     if (!isValidProduct(data)) {
       return Promise.reject(new ProductError('Product data is invalid'));
     }
-
-    const entity = new Product(data);
-
     const client = new Client(dbOptions);
+    await client.connect();
+
+    const entity = new Product(data);    
     const productRepository = new ProductRepository(client);
 
     return productRepository.create(entity).finally(() => {
       client.end();
     });
+  }
+
+  public async createProductBatch(products: any[]): Promise<Product[]> {
+    if (!products || !products.length) {
+      return Promise.reject(new ProductError('No data provided at "createProductBatch"'));
+    }
+    const client = new Client(dbOptions);
+    await client.connect();
+
+    const productRepository = new ProductRepository(client);
+
+    const newProducts = [];
+    try {
+      for (const item of products) {
+        const entity = new Product(item);
+        newProducts.push(await productRepository.create(entity));
+      }
+      return newProducts;
+    } finally {
+      client.end();
+    }
+  }
+
+  public notifyBatch(products: any[]): Promise<any[]> {
+    if (!products || !products.length) {
+      return Promise.reject(new ProductError('No data provided for notification'));
+    }
+    const promises = [];
+    for (const product of products) {
+      promises.push(this._sendEmail(product));
+    }
+
+    return Promise.all(promises);
+  }
+
+  private async _sendEmail(product): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this._snsQueue.publish({
+        Subject: 'New product is imported',
+        Message: JSON.stringify(product),
+        MessageAttributes: {
+          count: {
+            DataType: 'Number',
+            StringValue: product.count
+          }
+        },
+        TopicArn: SNS_ARN
+      }, (error) => {
+        if (error) {
+          reject(error);
+          console.error('Sending product to email error: ', error.message);
+        } else {
+          console.log('Sent email with new product: ', product);
+          resolve();
+        }
+      });
+    });
+
   }
 }
 
