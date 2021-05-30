@@ -14,7 +14,16 @@ export default {
               name: true
             }
           }
-        }
+        },
+        authorizer: {
+          name: 'tokenAuhtorizer',
+          arn: {
+            'Fn::ImportValue': 'BasicAuthorizerLambdaFunctionQualifiedArn'
+          },
+          resultTtlInSeconds: 0,
+          identitySource: 'method.request.header.Authorization',
+          type: 'token'
+        },
       }
     }
   ]
