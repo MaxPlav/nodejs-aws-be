@@ -18,7 +18,7 @@ const serverlessConfiguration: AWS = {
       dotenvParser: 'dotenv.config.js',
     },
   },
-  plugins: ['serverless-webpack', 'serverless-openapi-documentation', 'serverless-dotenv-plugin'],
+  plugins: ['serverless-webpack', 'serverless-openapi-documentation', 'serverless-dotenv-plugin', 'serverless-offline'],
   provider: {
     name: 'aws',
     runtime: 'nodejs14.x',
